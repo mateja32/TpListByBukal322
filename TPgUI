@@ -1,0 +1,99 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0.2, 0, 0.5, 0)
+frame.Position = UDim2.new(0.8, 0, 0.25, 0)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local searchBox = Instance.new("TextBox")
+searchBox.Size = UDim2.new(1, 0, 0, 30)
+searchBox.Position = UDim2.new(0, 0, 0, 0)
+searchBox.PlaceholderText = "Search players..."
+searchBox.Text = ""
+searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+searchBox.BorderSizePixel = 0
+searchBox.TextScaled = true
+searchBox.Parent = frame
+
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1, 0, 1, -30)
+scrollingFrame.Position = UDim2.new(0, 0, 0, 30)
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingFrame.ScrollBarThickness = 8
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.Parent = frame
+
+local function teleportToPlayer(targetPlayer)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character:MoveTo(targetPlayer.Character.HumanoidRootPart.Position)
+    end
+end
+
+local function createPlayerEntry(player, index)
+    local playerEntry = Instance.new("Frame")
+    playerEntry.Size = UDim2.new(1, 0, 0, 50)
+    playerEntry.Position = UDim2.new(0, 0, 0, 50 * (index - 1))
+    playerEntry.BackgroundTransparency = 1
+    playerEntry.Name = player.Name
+    playerEntry.Parent = scrollingFrame
+
+    local playerAvatar = Instance.new("ImageLabel")
+    playerAvatar.Size = UDim2.new(0, 50, 0, 50)
+    playerAvatar.Position = UDim2.new(0, 0, 0, 0)
+    playerAvatar.BackgroundTransparency = 1
+    playerAvatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+    playerAvatar.Parent = playerEntry
+
+    local playerName = Instance.new("TextButton")
+    playerName.Size = UDim2.new(1, -60, 1, 0)
+    playerName.Position = UDim2.new(0, 60, 0, 0)
+    playerName.BackgroundTransparency = 1
+    playerName.Text = player.Name
+    playerName.TextColor3 = Color3.fromRGB(255, 255, 255)
+    playerName.TextScaled = true
+    playerName.Font = Enum.Font.SourceSans
+    playerName.Parent = playerEntry
+
+    playerName.MouseButton1Click:Connect(function()
+        teleportToPlayer(player)
+    end)
+end
+
+local function updatePlayerList()
+    for _, entry in ipairs(scrollingFrame:GetChildren()) do
+        if entry:IsA("Frame") then
+            entry:Destroy()
+        end
+    end
+
+    local query = searchBox.Text:lower()
+    local playerCount = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Name:lower():find(query) then
+            playerCount = playerCount + 1
+            createPlayerEntry(player, playerCount)
+        end
+    end
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, playerCount * 50)
+end
+
+updatePlayerList()
+
+Players.PlayerAdded:Connect(function(player)
+    updatePlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    updatePlayerList()
+end)
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    updatePlayerList()
+end)
